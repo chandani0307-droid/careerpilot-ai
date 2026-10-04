@@ -16,6 +16,20 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title=f"{settings.app_name} API", version="1.0.0", lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=settings.cors_origins, allow_methods=["*"], allow_headers=["*"])
+
+# Allowed origins me Render Frontend domain add kiya hai
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://careerpilot-ai-1-cvit.onrender.com",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "*"  # Production testing ke liye sab allow kar sakte hain
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 for r in (profile.router, jobs.router, tracker.router, agent.router, analytics.router):
     app.include_router(r, prefix="/api")
