@@ -1,4 +1,8 @@
-const BASE = (import.meta.env.VITE_API_BASE as string | undefined) || "/api";
+const BASE =
+  (import.meta.env.VITE_API_BASE as string | undefined) ||
+  (import.meta.env.PROD
+    ? "https://careerpilot-ai-nmtu.onrender.com/api"
+    : "/api");
 
 export class ApiError extends Error {}
 
@@ -6,7 +10,8 @@ export class ApiError extends Error {}
 function getSessionId(): string {
   let sessionId = localStorage.getItem("careerpilot_session_id");
   if (!sessionId) {
-    sessionId = "user_" + Math.random().toString(36).substring(2, 9) + "_" + Date.now();
+    sessionId =
+      "user_" + Math.random().toString(36).substring(2, 9) + "_" + Date.now();
     localStorage.setItem("careerpilot_session_id", sessionId);
   }
   return sessionId;
