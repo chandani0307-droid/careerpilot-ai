@@ -13,13 +13,19 @@ def now() -> datetime:
 
 
 class Profile(Base):
-    """Single-user app: one row (id=1). `data` holds the analysed candidate profile."""
+    """Multi-session support: mapped by `session_id`."""
+
     __tablename__ = "profiles"
     id: Mapped[int] = mapped_column(primary_key=True)
+    session_id: Mapped[str] = mapped_column(
+        String(100), default="default_session", index=True
+    )
     filename: Mapped[str] = mapped_column(String(255), default="")
     resume_text: Mapped[str] = mapped_column(Text, default="")
     data: Mapped[dict] = mapped_column(JSON, default=dict)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=now, onupdate=now
+    )
 
 
 class Job(Base):
@@ -28,7 +34,9 @@ class Job(Base):
     title: Mapped[str] = mapped_column(String(300))
     company: Mapped[str] = mapped_column(String(200), default="")
     location: Mapped[str] = mapped_column(String(200), default="")
-    region: Mapped[str] = mapped_column(String(20), default="remote", index=True)
+    region: Mapped[str] = mapped_column(
+        String(20), default="remote", index=True
+    )
     url: Mapped[str] = mapped_column(String(1000), default="")
     apply_url: Mapped[str] = mapped_column(String(1000), default="")
     linkedin_url: Mapped[str] = mapped_column(String(1000), default="")
@@ -43,7 +51,9 @@ class Job(Base):
     missing_skills: Mapped[list] = mapped_column(JSON, default=list)
     ai_note: Mapped[str] = mapped_column(Text, default="")
     saved: Mapped[bool] = mapped_column(Boolean, default=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=now
+    )
 
 
 class Application(Base):
@@ -53,22 +63,30 @@ class Application(Base):
     title: Mapped[str] = mapped_column(String(300))
     company: Mapped[str] = mapped_column(String(200), default="")
     url: Mapped[str] = mapped_column(String(1000), default="")
-    status: Mapped[str] = mapped_column(String(20), default="saved", index=True)  # saved|drafted|applied|interview|offer|rejected
+    status: Mapped[str] = mapped_column(
+        String(20), default="saved", index=True
+    )  # saved|drafted|applied|interview|offer|rejected
     match_score: Mapped[int] = mapped_column(Integer, default=0)
     notes: Mapped[str] = mapped_column(Text, default="")
     cover_letter: Mapped[str] = mapped_column(Text, default="")
     tailored_summary: Mapped[str] = mapped_column(Text, default="")
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
-    applied_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=now
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=now, onupdate=now
+    )
+    applied_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
 
 class Action(Base):
-    """Anything that touches the outside world. Only runs after explicit human approval.
-    status: draft -> pending -> executed | rejected"""
     __tablename__ = "actions"
     id: Mapped[int] = mapped_column(primary_key=True)
-    type: Mapped[str] = mapped_column(String(20), index=True)  # email | linkedin | apply
+    type: Mapped[str] = mapped_column(
+        String(20), index=True
+    )  # email | linkedin | apply
     job_id: Mapped[str] = mapped_column(String(32), default="", index=True)
     title: Mapped[str] = mapped_column(String(400), default="")
     company: Mapped[str] = mapped_column(String(200), default="")
@@ -76,11 +94,17 @@ class Action(Base):
     subject: Mapped[str] = mapped_column(String(400), default="")
     body: Mapped[str] = mapped_column(Text, default="")
     target_url: Mapped[str] = mapped_column(String(1000), default="")
-    status: Mapped[str] = mapped_column(String(20), default="draft", index=True)
+    status: Mapped[str] = mapped_column(
+        String(20), default="draft", index=True
+    )
     result: Mapped[dict] = mapped_column(JSON, default=dict)
     run_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now, onupdate=now)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=now
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=now, onupdate=now
+    )
 
 
 class AgentRun(Base):
@@ -91,4 +115,6 @@ class AgentRun(Base):
     status: Mapped[str] = mapped_column(String(20), default="running")
     trace: Mapped[list] = mapped_column(JSON, default=list)
     summary: Mapped[dict] = mapped_column(JSON, default=dict)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=now
+    )
