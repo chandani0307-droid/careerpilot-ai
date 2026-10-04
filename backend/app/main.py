@@ -11,21 +11,16 @@ from .routers import agent, analytics, jobs, profile, tracker
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    Base.metadata.create_all(engine)  # swap for Alembic migrations when you move to PostgreSQL in production
+    Base.metadata.create_all(engine)
     yield
 
 
 app = FastAPI(title=f"{settings.app_name} API", version="1.0.0", lifespan=lifespan)
 
-# Allowed origins me Render Frontend domain add kiya hai
+# Allow ALL origins temporarily to completely fix CORS connection issues
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://careerpilot-ai-1-cvit.onrender.com",
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "*"  # Production testing ke liye sab allow kar sakte hain
-    ],
+    allow_origins=["*"],  # Production & local testing ke liye Sab domains allow kar rahe hain
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
