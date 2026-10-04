@@ -1,12 +1,9 @@
 const BASE =
   (import.meta.env.VITE_API_BASE as string | undefined) ||
-  (import.meta.env.PROD
-    ? "https://careerpilot-ai-nmtu.onrender.com/api"
-    : "/api");
+  "https://careerpilot-ai-nmtu.onrender.com/api";
 
 export class ApiError extends Error {}
 
-// Browser session ke liye Unique Session ID generate/read karne ka helper
 function getSessionId(): string {
   let sessionId = localStorage.getItem("careerpilot_session_id");
   if (!sessionId) {
@@ -20,7 +17,6 @@ function getSessionId(): string {
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
   let res: Response;
 
-  // Existing headers ke sath X-Session-ID merge kar rahe hain
   const headers = new Headers(init?.headers || {});
   headers.set("X-Session-ID", getSessionId());
 
@@ -29,8 +25,11 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
     headers,
   };
 
+  // Ensure leading slash formatting
+  const url = path.startsWith("/") ? `${BASE}${path}` : `${BASE}/${path}`;
+
   try {
-    res = await fetch(BASE + path, updatedInit);
+    res = await fetch(url, updatedInit);
   } catch {
     throw new ApiError("Can't reach the API. Is the backend running on port 8000?");
   }
