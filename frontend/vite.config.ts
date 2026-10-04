@@ -7,12 +7,18 @@ export default defineConfig({
     port: 5173,
     proxy: {
       "/api": {
-        target: (import.meta.env.VITE_PROXY_TARGET as string) || "http://127.0.0.1:8000",
+        target: process.env.VITE_PROXY_TARGET || "https://careerpilot-ai-nmtu.onrender.com",
         changeOrigin: true,
       },
     },
   },
   preview: {
     allowedHosts: ["careerpilot-ai-1-cvit.onrender.com", ".onrender.com"],
+    proxy: {
+      "/api": {
+        target: process.env.VITE_PROXY_TARGET || "https://careerpilot-ai-nmtu.onrender.com",
+        changeOrigin: true,
+      },
+    },
   },
 });
