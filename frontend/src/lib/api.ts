@@ -1,66 +1,44 @@
-const BASE =
-  (import.meta.env.VITE_API_BASE as string | undefined) ||
-  "https://careerpilot-ai-nmtu.onrender.com/api";
+// src/lib/api.ts
 
-export class ApiError extends Error {}
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://careerpilot-ai-1-cvit.onrender.com/api';
 
-function getSessionId(): string {
-  let sessionId = localStorage.getItem("careerpilot_session_id");
-  if (!sessionId) {
-    sessionId =
-      "user_" + Math.random().toString(36).substring(2, 9) + "_" + Date.now();
-    localStorage.setItem("careerpilot_session_id", sessionId);
+// Unique session ID for persistent user state across pages
+const getSessionId = () => {
+  let id = localStorage.getItem('cp_session_id');
+  if (!id) {
+    id = 'session_' + Math.random().toString(36).substring(2, 11);
+    localStorage.setItem('cp_session_id', id);
   }
-  return sessionId;
-}
-
-async function req<T>(path: string, init?: RequestInit): Promise<T> {
-  let res: Response;
-
-  const headers = new Headers(init?.headers || {});
-  headers.set("X-Session-ID", getSessionId());
-
-  const updatedInit: RequestInit = {
-    ...init,
-    headers,
-  };
-
-  // Ensure leading slash formatting
-  const url = path.startsWith("/") ? `${BASE}${path}` : `${BASE}/${path}`;
-
-  try {
-    res = await fetch(url, updatedInit);
-  } catch {
-    throw new ApiError("Can't reach the API. Is the backend running on port 8000?");
-  }
-
-  if (!res.ok) {
-    let msg = res.statusText;
-    try {
-      const j = await res.json();
-      msg = typeof j.detail === "string" ? j.detail : JSON.stringify(j.detail);
-    } catch {
-      /* ignore */
-    }
-    throw new ApiError(msg);
-  }
-  return (await res.json()) as T;
-}
-
-const json = (method: string, body?: unknown): RequestInit => ({
-  method,
-  headers: { "Content-Type": "application/json" },
-  body: body === undefined ? undefined : JSON.stringify(body),
-});
+  return id;
+};
 
 export const api = {
-  get: <T,>(p: string) => req<T>(p),
-  post: <T,>(p: string, body?: unknown) => req<T>(p, json("POST", body ?? {})),
-  patch: <T,>(p: string, body: unknown) => req<T>(p, json("PATCH", body)),
-  del: <T,>(p: string) => req<T>(p, { method: "DELETE" }),
-  upload: <T,>(p: string, file: File) => {
-    const f = new FormData();
-    f.append("file", file);
-    return req<T>(p, { method: "POST", body: f });
+  async get<T>(endpoint: string): Promise<T> {
+    const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+      headers: {
+        'x-session-id': getSessionId(),
+      },
+    });
+    if (!res.ok) throw new Error(`API Error: ${res.statusText}`);
+    return res.json();
+  },
+
+  async upload<T>(endpoint: string, file: File): Promise<T> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'x-session-id': getSessionId(), // Must pass session ID here!
+      },
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail || `Upload failed with status ${res.status}`);
+    }
+    return res.json();
   },
 };
