@@ -6,7 +6,7 @@ from ..models.schemas import ProfileOut, ProfilePatch, TailorIn
 from ..models.tables import Job, Profile
 from ..services import writer
 from ..services.resume_parser import extract_text
-from ..services.store import upsert_jobs
+from ..services.store import get_profile_row, upsert_jobs
 
 router = APIRouter(tags=["resume & profile"])
 MAX_BYTES = 5 * 1024 * 1024
@@ -19,11 +19,6 @@ def _out(row: Profile) -> dict:
         "data": row.data,
         "resume_chars": len(row.resume_text or ""),
     }
-
-
-def _get_user_profile(db: Session, session_id: str) -> Profile | None:
-    """Session ID ke basis par database se user ka profile record fetch karta hai."""
-    return db.query(Profile).filter(Profile.session_id == session_id).first()
 
 
 @router.post("/resume/upload", response_model=ProfileOut)
@@ -46,11 +41,9 @@ def upload_resume(
             422,
             "No readable text found. If this is a scanned PDF, export a text-based PDF or upload a DOCX.",
         )
-    
     data = writer.analyze_resume(text, file.filename or "")
 
-    # Hardcoded id=1 ki jagah unique session_id query kar rahe hain
-    row = _get_user_profile(db, x_session_id)
+    row = get_profile_row(db, x_session_id)
     if not row:
         row = Profile(session_id=x_session_id)
 
@@ -59,7 +52,6 @@ def upload_resume(
     db.commit()
     db.refresh(row)
 
-    # re-score any jobs we already have against the new profile
     jobs = db.query(Job).all()
     if jobs:
         upsert_jobs(
@@ -85,35 +77,5 @@ def get_profile(
     x_session_id: str = Header(default="default_session"),
     db: Session = Depends(get_db),
 ):
-    row = _get_user_profile(db, x_session_id)
+    row = get_profile_row(db, x_session_id)
     return _out(row) if row else None
-
-
-@router.patch("/profile", response_model=ProfileOut)
-def patch_profile(
-    body: ProfilePatch,
-    x_session_id: str = Header(default="default_session"),
-    db: Session = Depends(get_db),
-):
-    row = _get_user_profile(db, x_session_id)
-    if not row:
-        raise HTTPException(404, "Upload a resume first.")
-    row.data = {**row.data, **body.model_dump(exclude_none=True)}
-    db.commit()
-    return _out(row)
-
-
-@router.post("/resume/tailor")
-def tailor(
-    body: TailorIn,
-    x_session_id: str = Header(default="default_session"),
-    db: Session = Depends(get_db),
-):
-    row, job = _get_user_profile(db, x_session_id), db.get(Job, body.job_id)
-    if not row:
-        raise HTTPException(404, "Upload a resume first.")
-    if not job:
-        raise HTTPException(404, "Job not found.")
-    return writer.tailor_for_job(
-        row.data, {c.name: getattr(job, c.name) for c in Job.__table__.columns}
-    )
