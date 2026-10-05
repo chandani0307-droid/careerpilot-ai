@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, File, Header, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from ..core.db import get_db
-from ..models.schemas import ProfileOut, ProfilePatch, TailorIn
+from ..models.schemas import ProfileOut
 from ..models.tables import Job, Profile
 from ..services import writer
 from ..services.resume_parser import extract_text
@@ -36,13 +36,15 @@ def upload_resume(
         raise HTTPException(415, str(exc))
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(422, f"Could not read this file: {exc}")
+    
     if len(text) < 80:
         raise HTTPException(
             422,
-            "No readable text found. If this is a scanned PDF, export a text-based PDF or upload a DOCX.",
+            "No readable text found. Export a text-based PDF or upload a DOCX.",
         )
     data = writer.analyze_resume(text, file.filename or "")
 
+    # Session ke according row check karo
     row = get_profile_row(db, x_session_id)
     if not row:
         row = Profile(session_id=x_session_id)
